@@ -1,5 +1,5 @@
 <?php
-namespace MobileApp\Connector\Block\Adminhtml\History;
+namespace MobileApp\Connector\Block\Adminhtml\Device;
 
 /**
  * Admin Connector page
@@ -37,9 +37,9 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
     protected function _construct()
     {
 
-        $this->_objectId = 'history_id';
+        $this->_objectId = 'device_id';
         $this->_blockGroup = 'MobileApp_Connector';
-        $this->_controller = 'adminhtml_history';
+        $this->_controller = 'adminhtml_device';
 
         parent::_construct();
 
@@ -51,7 +51,6 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
 
         $this->buttonList->remove('save');
         $this->buttonList->remove('reset');
-
     }
 
     /**
@@ -61,10 +60,10 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
      */
     public function getHeaderText()
     {
-        if ($this->_coreRegistry->registry('history')->getId()) {
-            return __("Edit History '%1'", $this->escapeHtml($this->_coreRegistry->registry('history')->getId()));
+        if ($this->_coreRegistry->registry('device')->getId()) {
+            return __("Edit Device '%1'", $this->escapeHtml($this->_coreRegistry->registry('device')->getId()));
         } else {
-            return __('New History');
+            return __('New Device');
         }
     }
 
@@ -114,8 +113,8 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
             }, false);
 
             function changeType(){
-                var history_type = document.getElementById('type').value;
-                switch (history_type) {
+                var device_type = document.getElementById('type').value;
+                switch (device_type) {
                     case '1':
                         document.querySelectorAll('.field-product_id')[0].style.display = 'block';
                         document.querySelectorAll('#product_id')[0].classList.add('required-entry');

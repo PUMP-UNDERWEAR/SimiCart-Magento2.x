@@ -1,5 +1,5 @@
 <?php
-namespace MobileApp\Connector\Block\Adminhtml\History;
+namespace MobileApp\Connector\Block\Adminhtml\Notice;
 
 /**
  * Admin Connector page
@@ -37,11 +37,30 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
     protected function _construct()
     {
 
-        $this->_objectId = 'history_id';
+        $this->_objectId = 'notice_id';
         $this->_blockGroup = 'MobileApp_Connector';
-        $this->_controller = 'adminhtml_history';
+        $this->_controller = 'adminhtml_notice';
 
         parent::_construct();
+
+        if ($this->_isAllowedAction('MobileApp_Connector::save')) {
+            $this->buttonList->update('save', 'label', __('Save'));
+            $this->buttonList->add(
+                'saveandcontinue',
+                [
+                    'label' => __('Save and Continue Edit'),
+                    'class' => 'save',
+                    'data_attribute' => [
+                        'mage-init' => [
+                            'button' => ['event' => 'saveAndContinueEdit', 'target' => '#edit_form'],
+                        ],
+                    ]
+                ],
+                -100
+            );
+        } else {
+            $this->buttonList->remove('save');
+        }
 
         if ($this->_isAllowedAction('MobileApp_Connector::connector_delete')) {
             $this->buttonList->update('delete', 'label', __('Delete'));
@@ -49,9 +68,7 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
             $this->buttonList->remove('delete');
         }
 
-        $this->buttonList->remove('save');
-        $this->buttonList->remove('reset');
-
+        $this->buttonList->update('save', 'label', __('Send'));
     }
 
     /**
@@ -61,10 +78,10 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
      */
     public function getHeaderText()
     {
-        if ($this->_coreRegistry->registry('history')->getId()) {
-            return __("Edit History '%1'", $this->escapeHtml($this->_coreRegistry->registry('history')->getId()));
+        if ($this->_coreRegistry->registry('notice')->getId()) {
+            return __("Edit Notification '%1'", $this->escapeHtml($this->_coreRegistry->registry('notice')->getId()));
         } else {
-            return __('New History');
+            return __('New Notification');
         }
     }
 
@@ -97,6 +114,9 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
      */
     protected function _prepareLayout()
     {
+        $arrow_down_img = $this->getViewFileUrl('MobileApp_Connector::images/arrow_down.png');
+        $arrow_up_img = $this->getViewFileUrl('MobileApp_Connector::images/arrow_up.png');
+
         $this->_formScripts[] = "
             function toggleEditor() {
                 if (tinyMCE.getInstanceById('page_content') == null) {
@@ -111,17 +131,51 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
                 // event change Type
                 changeType();
 
+                // default: hidden product grid
+                document.getElementById('product_grid').style.display = 'none';
+
             }, false);
 
+            document.body.addEventListener('click', function(e){
+                var product_grid_trs = document.querySelectorAll('#product_grid_table tbody tr');
+                var trElement;
+                var radioArray = [];
+                for (var i = 0, j = 0; i < product_grid_trs.length; i++) {
+                    trElement = product_grid_trs.item(i);
+                    trElement.addEventListener('click', function(e){
+                        var rd = this.getElementsByTagName('input')[0];
+                        rd.checked = true;
+                        document.getElementById('product_id').value = rd.value;
+                        return false;
+                    });
+                }
+
+            }, false);
+
+            function toogleProduct(){
+                var product_grid = document.getElementById('product_grid');
+                var product_choose_img = document.getElementById('show_product_grid');
+
+                if(product_grid.style.display == 'none'){
+                    product_grid.style.display = 'block';
+                    product_choose_img.src = '$arrow_up_img';
+                } else {
+                    product_grid.style.display = 'none';
+                    product_choose_img.src = '$arrow_down_img';
+                }
+            }
+
             function changeType(){
-                var history_type = document.getElementById('type').value;
-                switch (history_type) {
+                var banner_type = document.getElementById('type').value;
+                switch (banner_type) {
                     case '1':
                         document.querySelectorAll('.field-product_id')[0].style.display = 'block';
                         document.querySelectorAll('#product_id')[0].classList.add('required-entry');
 
-                        document.querySelectorAll('.field-category_id')[0].style.display = 'none';
-                        document.querySelectorAll('#category_id')[0].classList.remove('required-entry');
+                        document.querySelectorAll('.field-new_category_parent')[1].style.display = 'none';
+                        document.querySelectorAll('.field-new_category_parent')[0].style.display = 'none';
+                        document.querySelectorAll('#new_category_parent')[0].classList.remove('required-entry');
+                        document.querySelectorAll('#new_category_parent')[1].classList.remove('required-entry');
 
                         document.querySelectorAll('.field-notice_url')[0].style.display = 'none';
                         document.querySelectorAll('#notice_url')[0].classList.remove('required-entry');
@@ -130,8 +184,8 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
                         document.querySelectorAll('.field-product_id')[0].style.display = 'none';
                         document.querySelectorAll('#product_id')[0].classList.remove('required-entry');
 
-                        document.querySelectorAll('.field-category_id')[0].style.display = 'block';
-                        document.querySelectorAll('#category_id')[0].classList.add('required-entry');
+                        document.querySelectorAll('.field-new_category_parent')[0].style.display = 'block';
+                        document.querySelectorAll('#new_category_parent')[0].classList.add('required-entry');
 
                         document.querySelectorAll('.field-notice_url')[0].style.display = 'none';
                         document.querySelectorAll('#notice_url')[0].classList.remove('required-entry');
@@ -140,8 +194,10 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
                         document.querySelectorAll('.field-product_id')[0].style.display = 'none';
                         document.querySelectorAll('#product_id')[0].classList.remove('required-entry');
 
-                        document.querySelectorAll('.field-category_id')[0].style.display = 'none';
-                        document.querySelectorAll('#category_id')[0].classList.remove('required-entry');
+                        document.querySelectorAll('.field-new_category_parent')[1].style.display = 'none';
+                        document.querySelectorAll('.field-new_category_parent')[0].style.display = 'none';
+                        document.querySelectorAll('#new_category_parent')[0].classList.remove('required-entry');
+                        document.querySelectorAll('#new_category_parent')[1].classList.remove('required-entry');
 
                         document.querySelectorAll('.field-notice_url')[0].style.display = 'block';
                         document.querySelectorAll('#notice_url')[0].classList.add('required-entry');
@@ -150,9 +206,11 @@ class Edit extends \Magento\Backend\Block\Widget\Form\Container
                         document.querySelectorAll('.field-product_id')[0].style.display = 'block';
                         document.querySelectorAll('#product_id')[0].classList.add('required-entry');
 
-                        document.querySelectorAll('.field-category_id')[0].style.display = 'none';
-                        document.querySelectorAll('#category_id')[0].classList.remove('required-entry');
-
+                        document.querySelectorAll('.field-new_category_parent')[1].style.display = 'none';
+                        document.querySelectorAll('.field-new_category_parent')[0].style.display = 'none';
+                        document.querySelectorAll('#new_category_parent')[0].classList.remove('required-entry');
+                        document.querySelectorAll('#new_category_parent')[1].classList.remove('required-entry');
+                        
                         document.querySelectorAll('.field-notice_url')[0].style.display = 'none';
                         document.querySelectorAll('#notice_url')[0].classList.remove('required-entry');
                 }
